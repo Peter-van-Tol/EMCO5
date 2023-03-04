@@ -1,0 +1,2 @@
+litexcnc[cli] @ git+https://github.com/Peter-van-Tol/LiteX-CNC@11-add-external-extensions-to-litexcnc
+git+https://github.com/Peter-van-Tol/Litex-CNC-toolerator
