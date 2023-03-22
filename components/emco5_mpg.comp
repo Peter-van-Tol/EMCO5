@@ -1,0 +1,55 @@
+component emco5_mpg     "EMCO5: Connect the handwheel and speed selector on the userpanel";
+option singleton yes;
+
+// Pins for controlling the stepsize
+pin in  float jogscale-##[16 : (personality & 0xf)]           "Stepsize when NN is selected";
+pin in  bit   jogscale-##-selected[16 : (personality & 0xf)]  "Should be set HIGH when stepsize NN is to be selected";
+pin out float jogscale-out                                    "The actual jog-scale, determined on the selected jog-scale and the scale of the integrated ilowpass function";
+
+// Counts from the handwheel and output
+pin in  s32 counts-in "";
+pin out s32 counts-out "\\fBcounts-out\\fR tracks \\fBcounts-in\\fR*\\fBscale\\fR through a low-pass filter of \\fBgain\\fR per period.";
+
+// Settings for ilowpass
+param rw float scale = 1024 "A scale factor applied to the output value of the low-pass filter.";
+param rw float gain = .5    """Together with the period, sets the rate at
+    which the output changes.  Useful range is between 0 and 1, with higher
+    values causing the input value to be tracked more quickly.  For
+    instance, a setting of 0.9 causes the output value to go 90% of the way
+    towards the input value in each period""";
+
+// Variables to track the ilowpass 
+variable float value;
+variable float scale_prev;
+variable float scale_inv;
+
+function _;
+
+license "GPL"; // indicates GPL v2 or later
+description """
+    Used for the MPG section of the user panel. Minimizing the number of components
+    required to get the MPG working. Implements ilowpass with a few upgrades. Scaling
+    the ilowpass directly also modifies the step scale for the jogging.
+""";
+author "Peter van Tol <petertgvantol@gmail.com>";
+
+;;
+// memoisation of scale
+if (scale != scale_prev) {
+    scale = scale_prev;
+    scale_inv = 1.0 / scale;
+}
+
+// jog-scale selection
+jogscale_out = 0;
+for(size_t i=0; i < (personality & 0xf); i++) {
+    if(jogscale_selected(i)) { 
+        jogscale_out = jogscale(i) * scale_inv;
+        break;
+    }
+}
+
+// ilowpass implementation
+// source: https://github.com/robEllenberg/linuxcnc-mirror/blob/master/src/hal/components/ilowpass.comp 
+value += (counts_in - value) * gain;
+counts_out = (int)(value * scale);
