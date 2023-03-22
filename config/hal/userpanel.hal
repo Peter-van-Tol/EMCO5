@@ -1,0 +1,114 @@
+# This HAL-file is responsible for the user panel. The user panel
+# consists of:
+# - program buttons (with indicator lights) for START, FEED_HOLD and STOP
+# - overrides (feed, speed, spindle), inluding status LED
+# - MPG, including selectors for speed and axis.
+#
+# NOTES: 
+# - The E-stop is also located on the user panel. However, the
+#   E-stop chain contains more elements then just the button. Therefore,
+#   the E-stop is not connected in this file.
+# - This file depends on the GUI to be loaded. Therefore, this file is
+#   called from `postgui_call_list.hal`.
+
+###############################################################################
+# BUTTONS
+###############################################################################
+# Status from halui
+net is-idle          emco5-userpanel.is-idle           <= halui.program.is-idle
+net is-paused        emco5-userpanel.is-paused         <= halui.program.is-paused
+net is-running       emco5-userpanel.is-running        <= halui.program.is-running
+# Status whether program is loaded
+net is-gcode-loaded  emco5-userpanel.is-gcode-loaded   <= gmoccapy.program.length
+# Connect the buttons
+net is-start-pressed emco5-userpanel.is-start-pressed  <= EMCO5.gpio.start-button.in
+net is-pause-pressed emco5-userpanel.is-pause-pressed  <= EMCO5.gpio.pause-button.in
+net is-stop-pressed  emco5-userpanel.is-stop-pressed   <= EMCO5.gpio.stop-button.in
+# Export the actions to the halui
+net pause            emco5-userpanel.pause             => halui.program.pause
+net resume           emco5-userpanel.resume            => halui.program.resume
+net run              emco5-userpanel.run               => halui.program.run
+net step             emco5-userpanel.step              => halui.program.step
+net stop             emco5-userpanel.stop              => halui.program.stop
+# Connect the status LEDs
+net start-status-LED emco5-userpanel.start-status-LED  => EMCO5.gpio.start-LED.out
+net pause-status-LED emco5-userpanel.pause-status-LED  => EMCO5.gpio.pause-LED.out
+net stop-status-LED  emco5-userpanel.stop-status-LED   => EMCO5.gpio.stop-LED.out
+# Signals for disabled (OFF/FALSE), enabled (ON/TRUE) and active (BLINKING -> PWM) buttons. 
+setp emco5-userpanel.status-disabled FALSE
+setp emco5-userpanel.status-enabled  TRUE
+# - create blinking signal and connect to the active signal
+setp pwmgen.0.enable   TRUE
+setp pwmgen.0.value    0.5
+setp pwmgen.0.scale    1.0
+setp pwmgen.0.pwm-freq 1.0
+net status-active    emco5-userpanel.status-active     <= pwmgen.0.pwm 
+
+###############################################################################
+# OVERRIDES
+###############################################################################
+# Feed
+# - connect the encoders
+setp gmoccapy.feed.feed-override.count-enable TRUE
+net  feed-override-counts    gmoccapy.feed.feed-override.counts      <= EMCO5.encoder.feed-override.counts
+net  feed-override-reset     gmoccapy.feed.reset-feed-override       <= EMCO5.gpio.reset-feed-override.in
+# - show LED when feed-override is active (NOTE: wcomp output is HIGH when value 
+#   is equal, therefore the LED output is inverted)
+setp wcomp.feed-override-active.min 0.99
+setp wcomp.feed-override-active.max 1.01
+net  feed-override-value     wcomp.feed-override-active.in           <= halui.feed-override.value
+net  feed-override-acxtive   wcomp.feed-override-active.out          => EMCO5.gpio.feed-override-LED.out
+setp EMCO5.gpio.feed-override-LED.invert_output TRUE
+ 
+# Rapid
+setp gmoccapy.rapid.rapid-override.count-enable TRUE
+net rapid-override-counts    gmoccapy.rapid.rapid-override.counts    <= EMCO5.encoder.rapid-override.counts
+net rapid-override-reset     gmoccapy.rapid.reset-rapid-override     <= EMCO5.gpio.reset-rapid-override.in
+# - show LED when rapid-override is active (NOTE: wcomp output is HIGH when value 
+#   is equal, therefore the LED output is inverted)
+setp wcomp.rapid-override-active.min 0.99
+setp wcomp.rapid-override-active.max 1.01
+net  rapid-override-value    wcomp.rapid-override-active.in          <= halui.rapid-override.value
+net  rapid-override-active   wcomp.rapid-override-active.out         => EMCO5.gpio.rapid-override-LED.out
+setp EMCO5.gpio.rapid-override-LED.invert_output TRUE
+
+# Spindle
+setp gmoccapy.spindle.spindle-override.count-enable TRUE
+net spindle-override-counts gmoccapy.spindle.spindle-override.counts <= EMCO5.encoder.spindle-override.counts
+net spindle-override-reset  gmoccapy.spindle.reset-spindle-override  <= EMCO5.gpio.reset-spindle-override.in
+# - show LED when spindle-override is active (NOTE: wcomp output is HIGH when value 
+#   is equal, therefore the LED output is inverted)
+setp wcomp.spindle-override-active.min 0.99
+setp wcomp.spindle-override-active.max 1.01
+net  spindle-override-value  wcomp.spindle-override-active.in        <= halui.spindle.0.override.value
+net  spindle-override-active wcomp.spindle-override-active.out       => EMCO5.gpio.spindle-override-LED.out
+setp EMCO5.gpio.spindle-override-LED.invert_output TRUE
+
+
+###############################################################################
+# MPG
+###############################################################################
+# Connect the counter of the MPG to the X- and Z-axisand set ilowpass
+net jog-counts-in  emco5-mpg.counts-in <= EMCO5.encoder.mpg.counts
+net jog-counts-out axis.x.jog-counts   <= emco5-mpg.counts-out
+net jog-counts-out axis.z.jog-counts
+setp emco5-mpg.scale 1000
+setp emco5-mpg.gain  0.5
+
+# Connect the jog-scale
+# - preset scaling
+setp emco5-mpg.jogscale-00 0.01
+setp emco5-mpg.jogscale-00 0.1
+setp emco5-mpg.jogscale-00 1.0
+# - connect the inputs
+net speed1_selected emco5-mpg.jogscale-00-selected <= EMCO5.gpio.speed1-selected.in
+net speed2_selected emco5-mpg.jogscale-01-selected <= EMCO5.gpio.speed2-selected.in
+net speed3_selected emco5-mpg.jogscale-02-selected <= EMCO5.gpio.speed3-selected.in
+
+# Connect the output to the axes
+net jog_scale axis.x.jog-scale <= emco5-mpg.jogscale-out
+net jog_scale axis.z.jog-scale
+
+# Connect the signals for enabling jogging on the machine
+net x-jog-enable axis.x.jog-enable <= EMCO5.gpio.axis-x-selected.in
+net z-jog-enable axis.z.jog-enable <= EMCO5.gpio.axis-z-selected.in

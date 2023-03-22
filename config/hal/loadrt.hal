@@ -1,0 +1,36 @@
+# This HAL-file is responsible for loading all components. This file
+# loaded first. Any components that are required for the correct
+# working of the machine (such as, but limited to AND, OR, etc.) can
+# also be added to this file.
+
+# Kinematics and motion planner
+loadrt [KINS]KINEMATICS
+loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
+
+# Connection to the board
+loadrt litexcnc extra_modules="toolerator" connections="eth:10.0.0.10"
+
+# Add extra required modules here
+# USERPANEL (file:userpanel.hal)
+loadrt emco5_userpanel
+loadrt pwmgen output_type=0
+loadrt emco5_mpg personality=0x3
+# - overrides
+loadrt wcomp names=wcomp.feed-override-active,wcomp.rapid-override-active,wcomp.spindle-override-active
+
+# Assign to threads
+# - LitexCNC
+addf EMCO5.read servo-thread
+# - MOTMOD
+addf motion-command-handler        servo-thread
+addf motion-controller             servo-thread
+# - USERPANEL (file:userpanel.hal)
+addf emco5-userpanel               servo-thread
+addf pwmgen.make-pulses            servo-thread
+addf pwmgen.update                 servo-thread
+addf wcomp.feed-override-active    servo-thread
+addf wcomp.rapid-override-active   servo-thread
+addf wcomp.spindle-override-active servo-thread
+addf emco5-mpg                     servo-thread
+# - LitexCNC
+addf EMCO5.write                   servo-thread
