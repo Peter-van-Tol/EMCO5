@@ -1,0 +1,112 @@
+component emco5_userpanel     "EMCO5: Connect the buttons and status lights on user panel";
+option singleton yes;
+
+// Inputs from the LinuxCNC
+pin in bit is-idle            "Status pin telling that no program is running";
+pin in bit is-paused          "Status pin telling that a program is paused";
+pin in bit is-running         "Status pin telling that a program is running";
+pin in signed is-gcode-loaded "Number of gcode lines currently loaded, telling a file is loaded and can be started when set to number >0.";
+
+// Inputs from the user panel
+pin in bit is-start-pressed   "Input for external start button";
+pin in bit is-pause-pressed   "Input for external pause button";
+pin in bit is-stop-pressed    "Input for external stop button";
+
+// Inputs for the status lights
+pin in bit status-disabled    "The status which wil be set to the status LED when the function is disabled";
+pin in bit status-enabled     "The status which wil be set to the status LED when the function is enabled";
+pin in bit status-active      "The status which wil be set to the status LED when the function is currently active";
+
+// Ouputs for the LinuxCNC
+pin out bit pause             "Pin for pausing a program";
+pin out bit resume            "Pin for resuming a program";
+pin out bit run               "Pin for running a program";
+pin out bit step              "Pin for stepping in a program";
+pin out bit stop              "Pin for stopping a program";
+
+// Outputs for status lights on the start panel
+pin out bit start-status-LED  "Signal for the status LED of the start button";
+pin out bit pause-status-LED  "Signal for the status LED of the pause button";
+pin out bit stop-status-LED   "Signal for the status LED of the stop button";
+
+function _;
+
+license "GPL"; // indicates GPL v2 or later
+description """ Used for connecting Program start, Pause (Feed hold), and Stop 
+    from the user panel to the halui. Also supports stepping when 
+    the program is paused. This component can also be created by slapping a
+    large number of `and` and `or` components together, cluttering the HAL-files.
+    This is deemed a cleaner method.""";
+author "Peter van Tol <petertgvantol@gmail.com>";
+
+;;
+// Actual function
+if (is_idle && is_gcode_loaded) {
+    // The machine is IDLE and program is loaded:
+    // - start button enabled -> action starts program
+    // - start button starts program
+    
+    // Set actions
+    pause = false;
+    resume = false;
+    run = is_start_pressed;
+    step = false;
+    stop = false;
+
+    // Set indicators
+    start_status_LED = status_enabled;
+    pause_status_LED = status_disabled;
+    stop_status_LED = status_disabled;
+
+} else if (is_running) {
+    // The machine is RUNNING:
+    // - start button active;
+    // - pause button enabled -> action pause program;
+    // - stop button enabled -> action stop program;
+    
+    // Set actions
+    pause = is_pause_pressed;
+    resume = false;
+    run = false;
+    step = false;
+    stop = is_stop_pressed;
+
+    // Set indicators
+    start_status_LED = status_active;
+    pause_status_LED = status_enabled;
+    stop_status_LED = status_enabled;
+
+} else if (is_paused) {
+    // The machine is PAUSED:
+    // - pause button active;
+    // - start button enabled -> action step program;
+    // - stop button enabled -> action stop program;
+    
+    // Set actions
+    pause = false;
+    resume = is_pause_pressed;
+    run = false;
+    step = is_start_pressed;
+    stop = is_stop_pressed;
+
+    // Set indicators
+    start_status_LED = status_enabled;
+    pause_status_LED = status_active;
+    stop_status_LED = status_enabled;
+
+} else {
+    // The machine has no program loaded or is not ready
+    // - all inputs disabled
+    
+    // Set actions
+    pause = false;
+    resume = false;
+    run = false;
+    step = false;
+    stop = false;
+
+    // Set indicators
+    start_status_LED = status_disabled;
+    pause_status_LED = status_disabled;
+    stop_status_LED = status_disabled;
+}
