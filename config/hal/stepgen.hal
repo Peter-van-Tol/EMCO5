@@ -1,0 +1,35 @@
+########################################################################
+# STEPGEN - X-AXIS
+########################################################################
+# - Setup of timings
+setp EMCO5.stepgen.00.position-scale   [JOINT_0]SCALE
+setp EMCO5.stepgen.00.steplen          5000
+setp EMCO5.stepgen.00.stepspace        5000
+setp EMCO5.stepgen.00.dir-hold-time    10000
+setp EMCO5.stepgen.00.dir-setup-time   10000
+setp EMCO5.stepgen.00.max-velocity     [JOINT_0]MAX_VELOCITY
+setp EMCO5.stepgen.00.max-acceleration [JOINT_0]MAX_ACCELERATION
+# setp EMCO5.stepgen.00.debug 1
+# - Connect position command and feedback
+net xpos-cmd joint.0.motor-pos-cmd => EMCO5.stepgen.00.position-cmd
+net xpos-fb  joint.0.motor-pos-fb  <= EMCO5.stepgen.00.position-prediction
+# - Enable the drive
+net xenable joint.0.amp-enable-out => EMCO5.stepgen.00.enable
+
+########################################################################
+# STEPGEN - Z-AXIS
+########################################################################
+# - Setup of timings
+setp EMCO5.stepgen.01.position-scale   [JOINT_1]SCALE
+setp EMCO5.stepgen.01.steplen          5000
+setp EMCO5.stepgen.01.stepspace        5000
+setp EMCO5.stepgen.01.dir-hold-time    10000
+setp EMCO5.stepgen.01.dir-setup-time   10000
+setp EMCO5.stepgen.01.max-velocity     [JOINT_1]MAX_VELOCITY
+setp EMCO5.stepgen.01.max-acceleration [JOINT_1]MAX_ACCELERATION
+# setp EMCO5.stepgen.01.debug 1
+# - Connect velocity command
+net zpos-cmd joint.1.motor-pos-cmd => EMCO5.stepgen.01.position-cmd
+net zpos-fb  joint.1.motor-pos-fb  <= EMCO5.stepgen.01.position-prediction
+# - Enable the drive
+net zenable joint.1.amp-enable-out => EMCO5.stepgen.01.enable

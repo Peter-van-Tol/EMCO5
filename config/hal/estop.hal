@@ -1,0 +1,25 @@
+
+# Connect all fault conditions to the ESTOP latch. Each fault condition goes
+# to their own ESTOP-latch.
+net external-estop-fault EMCO5.gpio.ESTOP.in-not         => estop-latch.0.fault-in
+# net alarm-x-fault        EMCO5.gpio.alarm-x.in-not       => estop-latch.1.fault-in
+# net alarm-z-fault        EMCO5.gpio.alarm-z.in-not       => estop-latch.2.fault-in
+# net alarm-spindle-fault  EMCO5.gpio.alarm-spindle.in-not => estop-latch.3.fault-in
+
+# Connect the reset to all ESTOP-latches
+net latch-reset iocontrol.0.user-request-enable
+net latch-reset => estop-latch.0.reset
+net latch-reset => estop-latch.1.reset
+net latch-reset => estop-latch.2.reset
+net latch-reset => estop-latch.3.reset
+
+# Chain all the ESTOP-latches together. The first latch is chained to the enable
+# request. The last lkatch is connected to the output.
+net estop-chain-0 iocontrol.0.user-enable-out => estop-latch.0.ok-in
+# net estop-chain-1 estop-latch.0.ok-out        => estop-latch.1.ok-in
+# net estop-chain-2 estop-latch.1.ok-out        => estop-latch.2.ok-in
+# net estop-chain-3 estop-latch.2.ok-out        => estop-latch.3.ok-in
+
+# Create connections to all the outputs. This is both the GUI and the charge pump
+net estop-ok-out estop-latch.0.ok-out
+net estop-ok-out => iocontrol.0.emc-enable-in

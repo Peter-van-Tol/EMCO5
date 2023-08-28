@@ -2,8 +2,6 @@
 # loaded first. Any components that are required for the correct
 # working of the machine (such as, but limited to AND, OR, etc.) can
 # also be added to this file.
-
-# Kinematics and motion planner
 loadrt [KINS]KINEMATICS
 loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
 
@@ -11,6 +9,8 @@ loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JO
 loadrt litexcnc extra_modules="toolerator" connections="eth:10.0.0.10"
 
 # Add extra required modules here
+# E-STOP
+loadrt estop_latch count=4
 # USERPANEL (file:userpanel.hal)
 loadrt emco5_userpanel
 loadrt pwmgen output_type=0
@@ -18,9 +18,15 @@ loadrt emco5_mpg personality=0x3
 # - overrides
 loadrt wcomp names=wcomp.feed-override-active,wcomp.rapid-override-active,wcomp.spindle-override-active
 
+show thread
 # Assign to threads
 # - LitexCNC
 addf EMCO5.read servo-thread
+# - ESTOP
+addf estop-latch.0 servo-thread
+addf estop-latch.1 servo-thread
+addf estop-latch.2 servo-thread
+addf estop-latch.3 servo-thread
 # - MOTMOD
 addf motion-command-handler        servo-thread
 addf motion-controller             servo-thread

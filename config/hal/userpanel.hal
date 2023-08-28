@@ -98,8 +98,8 @@ setp emco5-mpg.gain  0.5
 # Connect the jog-scale
 # - preset scaling
 setp emco5-mpg.jogscale-00 0.01
-setp emco5-mpg.jogscale-00 0.1
-setp emco5-mpg.jogscale-00 1.0
+setp emco5-mpg.jogscale-01 0.1
+setp emco5-mpg.jogscale-02 1.0
 # - connect the inputs
 net speed1_selected emco5-mpg.jogscale-00-selected <= EMCO5.gpio.speed1-selected.in
 net speed2_selected emco5-mpg.jogscale-01-selected <= EMCO5.gpio.speed2-selected.in
